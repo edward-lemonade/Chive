@@ -13,13 +13,13 @@ const nodeTypes = { cvNode: ChiveNode };
 
 function EditorContent() {
 	const [title, setTitle] = useState<string>("Untitled Project");
+	const { screenToFlowPosition } = useReactFlow();
 	const { 
 		nodes, edges, 
 		onNodesChange, onEdgesChange, onConnect, 
 		setNodes, setEdges, 
 		selectedNode, setSelectedNode
 	} = useEditorStore();
-	const { screenToFlowPosition } = useReactFlow();
 
 	const addNewNode = (cvNodeType: CvNodeType = CvNodeType.Source) => {
 		const viewportCenter = {
@@ -126,6 +126,10 @@ function EditorContent() {
 						Add Node
 					</button>
 				</div>
+
+				<div>
+					{edges.length}
+				</div>
 			</aside>
 
 			{/* Center: React Flow canvas */}
@@ -140,6 +144,7 @@ function EditorContent() {
 					colorMode="dark"
 					fitView
 					defaultViewport={{x: 0, y: 0, zoom: 0.1}}
+					defaultEdgeOptions={{}}
 				>
 					<Background bgColor='#001814' color='rgba(255,255,255,0.5)' gap={24} />
 					<Controls />

@@ -15,6 +15,8 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/* SCROLLBAR */
+
 ::-webkit-scrollbar {
 	width: 8px;
 	height: 8px;
@@ -40,4 +42,25 @@
 }
 ::-webkit-scrollbar-thumb:horizontal:hover {
 	background: linear-gradient(to right, #87bc75, #75ba96);
+}
+
+/* REACT FLOW */
+
+.react-flow {
+  --xy-handle-color: rgba(255, 255, 255, 0.5);
+  --xy-handle-hover-color: rgba(255, 255, 255, 0.8);
+}
+
+.react-flow__edge {
+  stroke-width: 3;
+}
+
+.react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.5) !important;
+  stroke-width: 3;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.8) !important;
+  stroke-width: 3;
 }
