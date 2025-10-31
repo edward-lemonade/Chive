@@ -1,0 +1,5 @@
+runtime/*
+!runtime/qrcode/bg.jpg
+!runtime/fonts
+
+.env
