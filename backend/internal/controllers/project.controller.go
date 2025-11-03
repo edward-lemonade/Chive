@@ -12,7 +12,7 @@ import (
 )
 
 type ProjectInput struct {
-	ID        string                 `json:"id"`
+	ID        uint                   `json:"id"`
 	Title     string                 `json:"title"`
 	Data      map[string]interface{} `json:"data"`
 	CreatedAt string                 `json:"createdAt"`
@@ -23,6 +23,7 @@ func SaveProject(c *gin.Context) {
 	user, exists := c.Get("currentUser")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		fmt.Print("User not authenticated")
 		return
 	}
 
@@ -30,57 +31,78 @@ func SaveProject(c *gin.Context) {
 
 	var projectInput ProjectInput
 	if err := c.ShouldBindJSON(&projectInput); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
+		fmt.Print("Error binding JSON: ", err.Error())
 		return
 	}
 
-	// Convert nodes and edges to JSON
-	nodesJSON, err := json.Marshal(projectInput.Data["nodes"])
+	// Validate required fields
+	if projectInput.Title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+		return
+	}
+
+	if projectInput.Data == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data field is required"})
+		return
+	}
+
+	nodesData, ok := projectInput.Data["nodes"]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data must contain 'nodes' field"})
+		return
+	}
+	nodesJSON, err := json.Marshal(nodesData)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nodes data"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nodes data", "details": err.Error()})
+		fmt.Print("Invalid nodes data: ", err.Error())
 		return
 	}
 
-	edgesJSON, err := json.Marshal(projectInput.Data["edges"])
+	edgesData, ok := projectInput.Data["edges"]
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Data must contain 'edges' field"})
+		return
+	}
+	edgesJSON, err := json.Marshal(edgesData)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid edges data"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid edges data", "details": err.Error()})
+		fmt.Print("Invalid edges data: ", err.Error())
 		return
 	}
 
-	// Create or update project
 	var project models.Project
 
-	// Try to parse frontend ID as uint to check if project exists
-	// Note: Frontend may send UUID (string) or numeric ID
-	if projectInput.ID != "" {
-		var projectID uint
-		// Try to find by numeric ID if it's a valid number
-		_, err := fmt.Sscanf(projectInput.ID, "%d", &projectID)
-		if err == nil {
-			// Found valid numeric ID, try to find existing project
-			result := initializers.DB.Where("ID = ? AND creator_id = ?", projectID, currentUser.ID).First(&project)
-			if result.Error == nil {
-				// Update existing project
-				project.Title = projectInput.Title
-				project.Nodes = datatypes.JSON(nodesJSON)
-				project.Edges = datatypes.JSON(edgesJSON)
-				if err := initializers.DB.Save(&project).Error; err != nil {
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
-					return
-				}
-				c.JSON(http.StatusOK, gin.H{
-					"message": "Project updated successfully",
-					"project": project,
-				})
+	// If ID is non-zero, try to find and update existing project
+	if projectInput.ID != 0 {
+		result := initializers.DB.Where("ID = ? AND creator_id = ?", projectInput.ID, currentUser.ID).First(&project)
+		if result.Error == nil {
+			// Update existing project
+			project.Title = projectInput.Title
+			project.Nodes = datatypes.JSON(nodesJSON)
+			project.Edges = datatypes.JSON(edgesJSON)
+			if err := initializers.DB.Save(&project).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
+				fmt.Print("Failed to update project: ", err.Error())
 				return
 			}
+			c.JSON(http.StatusOK, gin.H{
+				"message": "Project updated successfully",
+				"project": gin.H{
+					"id":        project.ID,
+					"title":     project.Title,
+					"createdAt": project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+					"updatedAt": project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+				},
+			})
+			return
 		}
 	}
 
 	// Create new project (ID not provided or project not found)
 	project = models.Project{
 		CreatorID:       currentUser.ID,
-		CreatorUsername: currentUser.ID, // Note: CreatorUsername is uint in model
+		CreatorUsername: currentUser.Username,
 		Title:           projectInput.Title,
 		Nodes:           datatypes.JSON(nodesJSON),
 		Edges:           datatypes.JSON(edgesJSON),
@@ -88,33 +110,41 @@ func SaveProject(c *gin.Context) {
 
 	if err := initializers.DB.Create(&project).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save project"})
+		fmt.Print("Failed to save project")
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Project saved successfully",
-		"project": project,
+		"project": gin.H{
+			"id":        project.ID,
+			"title":     project.Title,
+			"createdAt": project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"updatedAt": project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		},
 	})
 }
 
 func LoadProject(c *gin.Context) {
 	user, exists := c.Get("currentUser")
 	if !exists {
+		fmt.Print("User not authenticated")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
 		return
 	}
 
 	currentUser := user.(models.User)
 
-	// Get project ID from query parameter
-	projectID := c.Query("projectId")
+	projectID := c.Query("id")
 	if projectID == "" {
+		fmt.Print("Project ID is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Project ID is required"})
 		return
 	}
 
 	var projectIDUint uint
 	if _, err := fmt.Sscanf(projectID, "%d", &projectIDUint); err != nil {
+		fmt.Print("Invalid project ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
@@ -123,16 +153,17 @@ func LoadProject(c *gin.Context) {
 	result := initializers.DB.Where("ID = ? AND creator_id = ?", projectIDUint, currentUser.ID).First(&project)
 
 	if result.Error != nil {
+		fmt.Print("Project not found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
 		return
 	}
 
-	// Unmarshal nodes and edges from JSON
 	var nodes interface{}
 	var edges interface{}
 
 	if len(project.Nodes) > 0 {
 		if err := json.Unmarshal(project.Nodes, &nodes); err != nil {
+			fmt.Print("Failed to parse nodes")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse nodes"})
 			return
 		}
@@ -140,12 +171,13 @@ func LoadProject(c *gin.Context) {
 
 	if len(project.Edges) > 0 {
 		if err := json.Unmarshal(project.Edges, &edges); err != nil {
+			fmt.Print("Failed to parse edges")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse edges"})
 			return
 		}
 	}
 
-	// Return project in ChiveProject format
+	// ChiveProject format
 	c.JSON(http.StatusOK, gin.H{
 		"id":    project.ID,
 		"title": project.Title,
@@ -161,7 +193,7 @@ func LoadProject(c *gin.Context) {
 type ProjectInfo struct {
 	ID              uint   `json:"id"`
 	CreatorID       uint   `json:"creatorId"`
-	CreatorUsername uint   `json:"creatorUsername"`
+	CreatorUsername string `json:"creatorUsername"`
 	Title           string `json:"title"`
 	CreatedAt       string `json:"createdAt"`
 	UpdatedAt       string `json:"updatedAt"`
@@ -176,7 +208,6 @@ func GetProjectInfo(c *gin.Context) {
 
 	currentUser := user.(models.User)
 
-	// Get project ID from query parameter
 	projectID := c.Query("projectId")
 	if projectID == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Project ID is required"})

@@ -9,7 +9,7 @@ import (
 type Project struct {
 	ID              uint           `json:"id" gorm:"primary_key"`
 	CreatorID       uint           `json:"creatorId"`
-	CreatorUsername uint           `json:"creatorUsername"`
+	CreatorUsername string         `json:"creatorUsername"`
 	Title           string         `json:"title"`
 	Nodes           datatypes.JSON `json:"nodes" gorm:"type:json"`
 	Edges           datatypes.JSON `json:"edges" gorm:"type:json"`
