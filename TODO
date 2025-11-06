@@ -1,9 +1,10 @@
-- Auth guards
-- Delete / rename project
-
 - EDITOR (C++, OpenCV)
 
-- User profile picture and settings (AWS or Azure?)
+- FULL AUTH
+	- User avatar, sign out, and settings (AWS or Azure?)
+	- Save guest projects to storage
+
+- Delete / rename project
 - UI Cleanup (Outer / Projects)
 
 - CODEGEN FEATURE
