@@ -105,7 +105,7 @@ function EditorContent() {
 	}, [menuOpen]);
 
 
-	const exportProject = useCallback((): ChiveProject => {
+	const jsonProject = useCallback((): ChiveProject => {
 		if (!project) {
 			let newProject = {
 				id: 0,
@@ -124,7 +124,7 @@ function EditorContent() {
 	}, [project, title, nodes, edges]);
 
 	const saveProject = useCallback(async () => {
-		const json = exportProject();
+		const json = jsonProject();
 		const res = await apiClient.post('/project/save', json);
 		if (res.status === 200) {
 			console.log("Project saved successfully");
@@ -151,7 +151,7 @@ function EditorContent() {
 		} else {
 			console.error("Failed to save project");
 		}
-	}, [exportProject]);
+	}, [jsonProject]);
 
 	// Debounced auto-save
 	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
