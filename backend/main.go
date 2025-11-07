@@ -2,9 +2,12 @@ package main
 
 import (
 	"edward-lemonade/chive/internal/controllers"
+	"edward-lemonade/chive/internal/cv_service"
 	"edward-lemonade/chive/internal/initializers"
 	"edward-lemonade/chive/internal/middlewares"
+	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -12,8 +15,13 @@ import (
 
 func main() {
 	initializers.LoadEnvs()
-
 	initializers.ConnectDB()
+
+	numWorkers := runtime.NumCPU() // Typically 4-16
+	queueSize := 16
+	cv_service.InitQueue(numWorkers, queueSize)
+
+	fmt.Printf("Starting image cruncher with %d workers\n", numWorkers)
 
 	router := gin.New()
 	router.Use(gin.Logger())
@@ -36,6 +44,9 @@ func main() {
 	router.GET("/api/project/load", middlewares.CheckAuth, controllers.LoadProject)
 	router.GET("/api/projects/info", middlewares.CheckAuth, controllers.GetProjectInfo)
 	router.GET("/api/projects/infos", middlewares.CheckAuth, controllers.GetProjectInfos)
+
+	// Pipeline routes
+	router.POST("/api/pipe", middlewares.CheckAuth, controllers.Pipe)
 
 	port := os.Getenv("PORT")
 	if port == "" {
