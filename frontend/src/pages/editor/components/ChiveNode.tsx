@@ -42,7 +42,7 @@ function ChiveNode(props: CvNode) {
 						position={isLeft ? Position.Left : Position.Right}
 						style={{ 
 							top: `${topPct}%`, 
-							background: isLeft ? '#F59E0B' : '#3B82F6',
+							background: isLeft ? '#3B82F6' : '#F59E0B',
 							width: '8px',
 							height: '8px',
 							border: '0px',
@@ -97,8 +97,9 @@ function ChiveNode(props: CvNode) {
 					value={data.cvNodeType}
 					onChange={onTypeChange}
 				>
-					<option value={CvNodeType.Source}>Source</option>
-					<option value={CvNodeType.Display}>Display</option>
+					{Object.entries(CV_NODE_CONFIGS).map(([key, config]) => (
+						<option key={key} value={config.cvNodeType}>{config.displayName}</option>
+					))}
 				</select>
 			</div>
 		</>
