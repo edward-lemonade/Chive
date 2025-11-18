@@ -98,24 +98,22 @@ func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*Processin
 
 // CleanupJobFiles removes input and output directories for a job
 func CleanupJobFiles(jobID string) error {
-	/*
-		inputDir := filepath.Join("..", "input", jobID)
-		outputDir := filepath.Join("..", "output", jobID)
+	inputDir := filepath.Join("..", "input", jobID)
+	outputDir := filepath.Join("..", "output", jobID)
 
-		var errs []error
+	var errs []error
 
-		if err := os.RemoveAll(inputDir); err != nil {
-			errs = append(errs, fmt.Errorf("failed to remove input dir: %v", err))
-		}
+	if err := os.RemoveAll(inputDir); err != nil {
+		errs = append(errs, fmt.Errorf("failed to remove input dir: %v", err))
+	}
 
-		if err := os.RemoveAll(outputDir); err != nil {
-			errs = append(errs, fmt.Errorf("failed to remove output dir: %v", err))
-		}
+	if err := os.RemoveAll(outputDir); err != nil {
+		errs = append(errs, fmt.Errorf("failed to remove output dir: %v", err))
+	}
 
-		if len(errs) > 0 {
-			return fmt.Errorf("cleanup errors: %v", errs)
-		}
-	*/
+	if len(errs) > 0 {
+		return fmt.Errorf("cleanup errors: %v", errs)
+	}
 	return nil
 }
 
