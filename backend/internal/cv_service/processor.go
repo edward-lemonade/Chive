@@ -45,12 +45,14 @@ func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*Processin
 	var inputPaths []string
 	for i, file := range uploadedFiles {
 		if !isImageFile(filenames[i]) {
+			fmt.Printf("Not image file: %v", filenames[i])
 			continue
 		}
 
 		destPath := filepath.Join(inputDir, filenames[i])
 		destFile, err := os.Create(destPath)
 		if err != nil {
+			fmt.Printf("Failed to create input file %v: %v", filenames[i], err)
 			continue
 		}
 
@@ -58,6 +60,7 @@ func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*Processin
 		destFile.Close()
 
 		if err != nil {
+			fmt.Printf("Failed to move input file %v: %v", filenames[i], err)
 			continue
 		}
 
@@ -95,23 +98,24 @@ func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*Processin
 
 // CleanupJobFiles removes input and output directories for a job
 func CleanupJobFiles(jobID string) error {
-	inputDir := filepath.Join("..", "input", jobID)
-	outputDir := filepath.Join("..", "output", jobID)
+	/*
+		inputDir := filepath.Join("..", "input", jobID)
+		outputDir := filepath.Join("..", "output", jobID)
 
-	var errs []error
+		var errs []error
 
-	if err := os.RemoveAll(inputDir); err != nil {
-		errs = append(errs, fmt.Errorf("failed to remove input dir: %v", err))
-	}
+		if err := os.RemoveAll(inputDir); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove input dir: %v", err))
+		}
 
-	if err := os.RemoveAll(outputDir); err != nil {
-		errs = append(errs, fmt.Errorf("failed to remove output dir: %v", err))
-	}
+		if err := os.RemoveAll(outputDir); err != nil {
+			errs = append(errs, fmt.Errorf("failed to remove output dir: %v", err))
+		}
 
-	if len(errs) > 0 {
-		return fmt.Errorf("cleanup errors: %v", errs)
-	}
-
+		if len(errs) > 0 {
+			return fmt.Errorf("cleanup errors: %v", errs)
+		}
+	*/
 	return nil
 }
 
@@ -120,9 +124,24 @@ func executePipelineOnBatch(imagePaths []string, outputDir string) error {
 		return nil
 	}
 
-	inputList := strings.Join(imagePaths, ",")
+	// Convert all paths to absolute paths
+	var absolutePaths []string
+	for _, path := range imagePaths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %s: %v", path, err)
+		}
+		absolutePaths = append(absolutePaths, absPath)
+	}
+	absOutputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for output dir: %v", err)
+	}
 
-	cmd := exec.Command(cvExePath, "--input", inputList, "--output", outputDir)
+	args := []string{"--output", absOutputDir, "--input"}
+	args = append(args, absolutePaths...)
+
+	cmd := exec.Command(cvExePath, args...)
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {

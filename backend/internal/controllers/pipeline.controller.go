@@ -49,12 +49,14 @@ func Pipe(c *gin.Context) {
 
 	form, err := c.MultipartForm()
 	if err != nil {
+		fmt.Print("Failed to parse form data")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form data"})
 		return
 	}
 
 	files := form.File["images"]
 	if len(files) == 0 {
+		fmt.Print("No images uploaded")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No images uploaded"})
 		return
 	}
@@ -84,6 +86,7 @@ func Pipe(c *gin.Context) {
 
 	job, err := cv_service.SubmitJob(fileReaders, filenames)
 	if err != nil {
+		fmt.Print("Failed to submit job")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to submit job: %v", err)})
 		return
 	}
@@ -94,6 +97,7 @@ func Pipe(c *gin.Context) {
 		defer cv_service.CleanupJobFiles(result.JobID)
 
 		if result.Error != nil {
+			fmt.Printf("Processing failed: %v", result.Error)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Processing failed: %v", result.Error)})
 			return
 		}
@@ -103,6 +107,7 @@ func Pipe(c *gin.Context) {
 		} else {
 			zipBuffer, err := utils.CreateZipFromFiles(result.OutputFiles)
 			if err != nil {
+				fmt.Print("Failed to create ZIP")
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create ZIP"})
 				return
 			}
@@ -113,6 +118,7 @@ func Pipe(c *gin.Context) {
 		}
 
 	case <-time.After(5 * time.Minute): // 5 minute timeout
+		fmt.Print("Processing timeout")
 		c.JSON(http.StatusRequestTimeout, gin.H{"error": "Processing timeout"})
 		return
 	}

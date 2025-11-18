@@ -47,19 +47,22 @@ int main(int argc, char* argv[]) {
 	string outputDir;
 	vector<string> imagePaths;
 
-	for (int i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; i++) {
         string arg = argv[i];
 
         if (arg == "--output" && i + 1 < argc) {
             outputDir = argv[++i];
         } else if (arg == "--input") {
-            // All remaining arguments after --input are image paths
-            for (int j = i + 1; j < argc; ++j) {
+            for (int j = i + 1; j < argc; j++) {
                 imagePaths.push_back(argv[j]);
             }
             break;
         }
     }
+
+	for (int i = 0; i < imagePaths.size(); i++) {
+		cout << imagePaths[i] << endl;
+	}
 
     // input validation
     if (outputDir.empty() || imagePaths.empty()) {

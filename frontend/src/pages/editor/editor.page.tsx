@@ -11,6 +11,7 @@ import useEditorStore, { defaultNode } from './store';
 import Brand from "@/components/Brand";
 import { CvNode, CvNodeType } from "@/types/CvNode";
 import ChiveNode from "./components/ChiveNode";
+import ImageUploadModal from "./components/ImageUploadButton";
 
 const nodeTypes = { cvNode: ChiveNode };
 
@@ -153,24 +154,6 @@ function EditorContent() {
 		}
 	}, [jsonProject]);
 
-	// Debounced auto-save
-	const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-	useEffect(() => {
-		if (!isLoaded) return;
-		if (saveTimeoutRef.current) {
-			clearTimeout(saveTimeoutRef.current);
-		}
-
-		saveTimeoutRef.current = setTimeout(() => {
-			saveProject();
-		}, 2000);
-
-		return () => {
-			if (saveTimeoutRef.current) {
-				clearTimeout(saveTimeoutRef.current);
-			}
-		};
-	}, [nodes, edges, title, isLoaded, saveProject]);
 
 	const handleSave = async () => {
 		await saveProject();
@@ -185,6 +168,8 @@ function EditorContent() {
 	const handleExit = () => {
 		navigate("/projects");
 	}
+
+	
 
 	return (
 		<div className="h-screen w-screen flex bg-transparent overflow-hidden relative">
@@ -202,7 +187,7 @@ function EditorContent() {
 
 			{/* Left permanent sidebar */}
 			<aside className="w-64 bg-black/20 border-r border-white flex flex-col bg-linear-to-b from-green-950 to-emerald-900">
-				<div className="border-b border-white/30 p-2 flex items-center justify-between">	
+				<div className="border-b border-white/30 px-2 py-4 flex items-center justify-between">	
 					<Brand sizeClass="text-2xl" />
 					<button
 						ref={menuAnchorRef}
@@ -214,7 +199,7 @@ function EditorContent() {
 					</button>
 				</div>
 
-				{/* Custom Menu Dropdown */}
+				{/* Menu Dropdown */}
 				{menuOpen && (
 					<div ref={menuRef} className="absolute left-2 top-16 z-50 bg-linear-to-b from-emerald-900 to-green-950 border border-white/30 rounded-md shadow-xl w-56">
 						<button
@@ -239,7 +224,7 @@ function EditorContent() {
 				)}
 
 				{/* Title */}			
-				<div className="border-b border-white/30 p-2">		
+				<div className="border-b border-white/30 px-2 py-4">		
 					<input
 						type="text"
 						value={title}
@@ -250,7 +235,7 @@ function EditorContent() {
 				</div>
 				
 				{/* Nodes List */}
-				<div className="border-b border-white/30 p-2 flex flex-col flex-1 min-h-0">
+				<div className="border-b border-white/30 px-2 py-4 flex flex-col flex-1 min-h-0">
 					<h3 className="text-green-100 font-semibold mb-4">Nodes</h3>
 					<div className="flex flex-col p-2 bg-black/20 gap-2 overflow-y-auto min-h-0 flex-1 scrollbar-thin scrollbar-track-black/20 scrollbar-thumb-white/20">
 						{nodes.map((node) => (
@@ -273,6 +258,11 @@ function EditorContent() {
 						<AddIcon className="mr-2" />
 						Add Node
 					</button>
+				</div>
+
+				{/* Image Upload -> Pipeline Button */}
+				<div className="border-b border-white/30 px-2 py-4 flex flex-col flex-1 min-h-0">
+					<ImageUploadModal id={id}/>
 				</div>
 			</aside>
 
