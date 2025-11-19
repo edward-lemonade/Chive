@@ -227,7 +227,10 @@ function EditorContent() {
 					formData.append(`images`, file);
 				});
 				formData.append(`data`, JSON.stringify({
-					nodes: nodes,
+					nodes: nodes.map(node => ({
+						data: node.data,
+						id: node.id,
+					})),
 					edges: edges,
 				}))
 

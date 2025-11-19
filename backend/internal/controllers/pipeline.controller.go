@@ -117,20 +117,16 @@ func Pipe(c *gin.Context) {
 			return
 		}
 
-		if len(result.OutputFiles) == 1 {
-			c.File(result.OutputFiles[0])
-		} else {
-			zipBuffer, err := utils.CreateZipFromFiles(result.OutputFiles)
-			if err != nil {
-				fmt.Print("Failed to create ZIP")
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create ZIP"})
-				return
-			}
-
-			c.Header("Content-Type", "application/zip")
-			c.Header("Content-Disposition", "attachment; filename=processed_images.zip")
-			c.Data(http.StatusOK, "application/zip", zipBuffer.Bytes())
+		zipBuffer, err := utils.CreateZipFromFiles(result.OutputFiles)
+		if err != nil {
+			fmt.Print("Failed to create ZIP")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create ZIP"})
+			return
 		}
+
+		c.Header("Content-Type", "application/zip")
+		c.Header("Content-Disposition", "attachment; filename=processed_images.zip")
+		c.Data(http.StatusOK, "application/zip", zipBuffer.Bytes())
 
 	case <-time.After(5 * time.Minute): // 5 minute timeout
 		fmt.Print("Processing timeout")
