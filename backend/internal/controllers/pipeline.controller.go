@@ -5,6 +5,7 @@ import (
 	"edward-lemonade/chive/internal/initializers"
 	"edward-lemonade/chive/internal/models"
 	"edward-lemonade/chive/internal/utils"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -24,29 +25,28 @@ func Pipe(c *gin.Context) {
 
 	currentUser := user.(models.User)
 
+	// Verify project access
 	projectID := c.Query("id")
 	if projectID == "" {
 		fmt.Print("Project ID is required")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Project ID is required"})
 		return
 	}
-
 	var projectIDUint uint
 	if _, err := fmt.Sscanf(projectID, "%d", &projectIDUint); err != nil {
 		fmt.Print("Invalid project ID")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid project ID"})
 		return
 	}
-
 	var project models.Project
 	projectResult := initializers.DB.Where("ID = ? AND creator_id = ?", projectIDUint, currentUser.ID).First(&project)
-
 	if projectResult.Error != nil {
 		fmt.Print("Project not found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
 		return
 	}
 
+	// Form
 	form, err := c.MultipartForm()
 	if err != nil {
 		fmt.Print("Failed to parse form data")
@@ -54,10 +54,25 @@ func Pipe(c *gin.Context) {
 		return
 	}
 
+	// Retrieve images
 	files := form.File["images"]
 	if len(files) == 0 {
 		fmt.Print("No images uploaded")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No images uploaded"})
+		return
+	}
+
+	// Retrieve pipeline data
+	dataValues := form.Value["data"]
+	if len(dataValues) == 0 {
+		fmt.Print("Pipeline data not provided")
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Pipeline data not provided"})
+		return
+	}
+	var pipelineData models.PipelineData
+	if err := json.Unmarshal([]byte(dataValues[0]), &pipelineData); err != nil {
+		fmt.Print("Failed to parse pipeline data JSON: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid pipeline data JSON", "details": err.Error()})
 		return
 	}
 

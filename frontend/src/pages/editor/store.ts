@@ -11,6 +11,7 @@ export const defaultNode: CvNode = {
 	data: {
 		name: "Source Node",
 		cvNodeType: CvNodeType.Source,
+		params: {}
 	},
 }
 

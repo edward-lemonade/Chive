@@ -23,7 +23,13 @@ function ChiveNode(props: CvNode) {
 		[updateNode]
 	);
 	const onTypeChange = useCallback(
-		(e: React.ChangeEvent<HTMLSelectElement>) => {updateNode({ cvNodeType: Number(e.target.value) as CvNodeType });},
+		(e: React.ChangeEvent<HTMLSelectElement>) => {
+			const newType: CvNodeType = Number(e.target.value);
+			updateNode({ 
+				cvNodeType: newType,
+				params: CV_NODE_CONFIGS[newType]
+			});
+		},
 		[updateNode]
 	);
 

@@ -13,7 +13,23 @@ namespace fs = std::filesystem;
 
 // usage .\cv.exe --output <outputDir> --input <image1> [image2 ...]
 
-cv::Mat deepfryImage(const cv::Mat& input) {
+cv::Mat blur(const cv::Mat& input, int size) {
+    if (input.empty()) {
+        cerr << "Error: empty image passed" << endl;
+        return {};
+    }
+
+    if (size <= 0) {
+        cerr << "Error: blur size must be > 0" << endl;
+        return input.clone();
+    }
+
+    cv::Mat output;
+    cv::blur(input, output, cv::Size(size, size));
+    return output;
+}
+
+cv::Mat deepfry(const cv::Mat& input) {
     if (input.empty()) {
         cerr << "Error: empty image passed" << endl;
         return {};
@@ -84,7 +100,7 @@ int main(int argc, char* argv[]) {
             continue;
         }
 
-        cv::Mat result = deepfryImage(image);
+        cv::Mat result = deepfry(image);
 
         if (!cv::imwrite(outputPath, result)) {
             cerr << "Failed to save: " << outputPath << endl;

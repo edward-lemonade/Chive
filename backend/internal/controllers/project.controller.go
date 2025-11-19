@@ -11,14 +11,6 @@ import (
 	"gorm.io/datatypes"
 )
 
-type ProjectInput struct {
-	ID        uint                   `json:"id"`
-	Title     string                 `json:"title"`
-	Data      map[string]interface{} `json:"data"`
-	CreatedAt string                 `json:"createdAt"`
-	UpdatedAt string                 `json:"updatedAt"`
-}
-
 func SaveProject(c *gin.Context) {
 	user, exists := c.Get("currentUser")
 	if !exists {
@@ -29,45 +21,17 @@ func SaveProject(c *gin.Context) {
 
 	currentUser := user.(models.User)
 
-	var projectInput ProjectInput
+	var projectInput models.ProjectInput
 	if err := c.ShouldBindJSON(&projectInput); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON format", "details": err.Error()})
 		fmt.Print("Error binding JSON: ", err.Error())
 		return
 	}
 
-	// Validate required fields
-	if projectInput.Title == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
-		return
-	}
-
-	if projectInput.Data == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Data field is required"})
-		return
-	}
-
-	nodesData, ok := projectInput.Data["nodes"]
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Data must contain 'nodes' field"})
-		return
-	}
-	nodesJSON, err := json.Marshal(nodesData)
+	dataBytes, err := json.Marshal(projectInput.Data)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid nodes data", "details": err.Error()})
-		fmt.Print("Invalid nodes data: ", err.Error())
-		return
-	}
-
-	edgesData, ok := projectInput.Data["edges"]
-	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Data must contain 'edges' field"})
-		return
-	}
-	edgesJSON, err := json.Marshal(edgesData)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid edges data", "details": err.Error()})
-		fmt.Print("Invalid edges data: ", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal project data"})
+		fmt.Print("Failed to marshal project data: ", err.Error())
 		return
 	}
 
@@ -79,8 +43,7 @@ func SaveProject(c *gin.Context) {
 		if result.Error == nil {
 			// Update existing project
 			project.Title = projectInput.Title
-			project.Nodes = datatypes.JSON(nodesJSON)
-			project.Edges = datatypes.JSON(edgesJSON)
+			project.Data = datatypes.JSON(dataBytes)
 			if err := initializers.DB.Save(&project).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
 				fmt.Print("Failed to update project: ", err.Error())
@@ -104,8 +67,7 @@ func SaveProject(c *gin.Context) {
 		CreatorID:       currentUser.ID,
 		CreatorUsername: currentUser.Username,
 		Title:           projectInput.Title,
-		Nodes:           datatypes.JSON(nodesJSON),
-		Edges:           datatypes.JSON(edgesJSON),
+		Data:            datatypes.JSON(dataBytes),
 	}
 
 	if err := initializers.DB.Create(&project).Error; err != nil {
@@ -158,45 +120,14 @@ func LoadProject(c *gin.Context) {
 		return
 	}
 
-	var nodes interface{}
-	var edges interface{}
-
-	if len(project.Nodes) > 0 {
-		if err := json.Unmarshal(project.Nodes, &nodes); err != nil {
-			fmt.Print("Failed to parse nodes")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse nodes"})
-			return
-		}
-	}
-
-	if len(project.Edges) > 0 {
-		if err := json.Unmarshal(project.Edges, &edges); err != nil {
-			fmt.Print("Failed to parse edges")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse edges"})
-			return
-		}
-	}
-
 	// ChiveProject format
 	c.JSON(http.StatusOK, gin.H{
-		"id":    project.ID,
-		"title": project.Title,
-		"data": gin.H{
-			"nodes": nodes,
-			"edges": edges,
-		},
+		"id":        project.ID,
+		"title":     project.Title,
+		"data":      project.Data,
 		"createdAt": project.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 		"updatedAt": project.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	})
-}
-
-type ProjectInfo struct {
-	ID              uint   `json:"id"`
-	CreatorID       uint   `json:"creatorId"`
-	CreatorUsername string `json:"creatorUsername"`
-	Title           string `json:"title"`
-	CreatedAt       string `json:"createdAt"`
-	UpdatedAt       string `json:"updatedAt"`
 }
 
 func GetProjectInfo(c *gin.Context) {
@@ -230,7 +161,7 @@ func GetProjectInfo(c *gin.Context) {
 		return
 	}
 
-	projectInfo := ProjectInfo{
+	projectInfo := models.ProjectInfo{
 		ID:              project.ID,
 		CreatorID:       project.CreatorID,
 		CreatorUsername: project.CreatorUsername,
@@ -263,9 +194,9 @@ func GetProjectInfos(c *gin.Context) {
 		return
 	}
 
-	projectInfos := make([]ProjectInfo, len(projects))
+	projectInfos := make([]models.ProjectInfo, len(projects))
 	for i, project := range projects {
-		projectInfos[i] = ProjectInfo{
+		projectInfos[i] = models.ProjectInfo{
 			ID:              project.ID,
 			CreatorID:       project.CreatorID,
 			CreatorUsername: project.CreatorUsername,
