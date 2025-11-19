@@ -374,7 +374,7 @@ function EditorContent() {
 				)}
 			</>
 		);
-	}, [])
+	}, [nodes, edges])
 
 	return (
 		<div className="h-screen w-screen flex bg-transparent overflow-hidden relative">

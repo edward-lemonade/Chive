@@ -99,7 +99,7 @@ func Pipe(c *gin.Context) {
 		}
 	}()
 
-	job, err := cv_service.SubmitJob(fileReaders, filenames)
+	job, err := cv_service.SubmitJob(fileReaders, filenames, pipelineData)
 	if err != nil {
 		fmt.Print("Failed to submit job")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to submit job: %v", err)})

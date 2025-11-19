@@ -1,6 +1,8 @@
 package cv_service
 
 import (
+	"edward-lemonade/chive/internal/models"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -28,7 +30,7 @@ func init() {
 }
 
 // handles the entire pipeline (internal, called by workers)
-func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*ProcessingResult, error) {
+func HandleImageBatch(uploadedFiles []io.Reader, filenames []string, pipeline models.PipelineData) (*ProcessingResult, error) {
 	jobID := uuid.New().String()
 
 	inputDir := filepath.Join("..", "input", jobID)
@@ -73,7 +75,7 @@ func HandleImageBatch(uploadedFiles []io.Reader, filenames []string) (*Processin
 	}
 
 	// process images
-	err := executePipelineOnBatch(inputPaths, outputDir)
+	err := executePipelineOnBatch(inputPaths, outputDir, pipeline)
 	if err != nil {
 		CleanupJobFiles(jobID)
 		return nil, fmt.Errorf("processing failed: %v", err)
@@ -117,7 +119,7 @@ func CleanupJobFiles(jobID string) error {
 	return nil
 }
 
-func executePipelineOnBatch(imagePaths []string, outputDir string) error {
+func executePipelineOnBatch(imagePaths []string, outputDir string, pipeline models.PipelineData) error {
 	if len(imagePaths) == 0 {
 		return nil
 	}
@@ -136,8 +138,17 @@ func executePipelineOnBatch(imagePaths []string, outputDir string) error {
 		return fmt.Errorf("failed to get absolute path for output dir: %v", err)
 	}
 
+	pipelineJSONBytes, err := json.Marshal(pipeline)
+	if err != nil {
+		return fmt.Errorf("failed to marshal pipeline string %s: %v", pipeline, err)
+	}
+	pipelineJSONString := string(pipelineJSONBytes)
+
+	fmt.Println(pipelineJSONString)
+
 	args := []string{"--output", absOutputDir, "--input"}
 	args = append(args, absolutePaths...)
+	args = append(args, "--pipeline", pipelineJSONString)
 
 	cmd := exec.Command(cvExePath, args...)
 	output, err := cmd.CombinedOutput()

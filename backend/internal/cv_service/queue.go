@@ -1,6 +1,7 @@
 package cv_service
 
 import (
+	"edward-lemonade/chive/internal/models"
 	"io"
 	"log"
 	"sync"
@@ -12,6 +13,7 @@ type Job struct {
 	ID            string
 	UploadedFiles []io.Reader
 	Filenames     []string
+	Pipeline      models.PipelineData
 	ResultChan    chan *ProcessingResult // Channel to send result back
 }
 
@@ -48,7 +50,7 @@ func worker(id int) {
 	}
 }
 func processJob(job *Job) *ProcessingResult {
-	result, err := HandleImageBatch(job.UploadedFiles, job.Filenames)
+	result, err := HandleImageBatch(job.UploadedFiles, job.Filenames, job.Pipeline)
 	if err != nil {
 		return &ProcessingResult{
 			JobID: job.ID,
@@ -59,11 +61,12 @@ func processJob(job *Job) *ProcessingResult {
 }
 
 // SubmitJob adds a job to the queue and returns a channel to receive the result
-func SubmitJob(uploadedFiles []io.Reader, filenames []string) (*Job, error) {
+func SubmitJob(uploadedFiles []io.Reader, filenames []string, pipeline models.PipelineData) (*Job, error) {
 	job := &Job{
 		ID:            generateJobID(),
 		UploadedFiles: uploadedFiles,
 		Filenames:     filenames,
+		Pipeline:      pipeline,
 		ResultChan:    make(chan *ProcessingResult, 1), // Buffered channel
 	}
 
