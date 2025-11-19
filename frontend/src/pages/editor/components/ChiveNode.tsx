@@ -27,7 +27,7 @@ function ChiveNode(props: CvNode) {
 			const newType: CvNodeType = Number(e.target.value);
 			updateNode({ 
 				cvNodeType: newType,
-				params: CV_NODE_CONFIGS[newType]
+				params: {...CV_NODE_CONFIGS[newType].params},
 			});
 		},
 		[updateNode]
