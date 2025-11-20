@@ -26,7 +26,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	cvExePath = filepath.Join(cwd, "..", "cv", "cv.exe")
+	cvExePath = filepath.Join(cwd, "..", "cv", "build", "cv.exe")
 }
 
 // handles the entire pipeline (internal, called by workers)
