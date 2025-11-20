@@ -13,7 +13,27 @@ export interface CvNodeConfig<T extends CvNodeType = CvNodeType> {
 	displayName: string,
 	inputs: number,
 	outputs: number,
-	params: CvNodeParamsMap[T],
+	paramSpecs: {[K in keyof CvNodeParamsMap[T]]: ParamSpec<CvNodeParamsMap[T][K]>}
+}
+
+// ===============================================================================================
+
+export enum ParamControlStyle {
+	IntBox,
+	NumBox,
+	IntSlider,
+	NumSlider,
+	Toggle,
+}
+export interface ParamSpec<T> {
+	displayName: string,
+	description: string,
+	controlStyle: ParamControlStyle,
+	default: T,
+
+	min?: number,
+	max?: number,
+	options?: T[],
 }
 
 // ===============================================================================================
@@ -32,22 +52,29 @@ export const CV_NODE_CONFIGS: {
 		displayName: "Source",
 		inputs: 0,
 		outputs: 1,
-		params: {},
+		paramSpecs: {},
 	},
 	[CvNodeType.Output]: {
 		cvNodeType: CvNodeType.Output,
 		displayName: "Output",
 		inputs: 1,
 		outputs: 0,
-		params: {},
+		paramSpecs: {},
 	},
 	[CvNodeType.Blur]: {
 		cvNodeType: CvNodeType.Blur,
 		displayName: "Blur",
 		inputs: 1,
 		outputs: 1,
-		params: {
-			size: 5
+		paramSpecs: {
+			size: {
+				displayName: "Kernel size",
+				description: "The higher the value, the stronger the blur",
+				controlStyle: ParamControlStyle.IntBox,
+
+				default: 5,
+				min: 1,
+			}
 		},
 	},
 	[CvNodeType.DeepFry]: {
@@ -55,7 +82,7 @@ export const CV_NODE_CONFIGS: {
 		displayName: "Deep Fry",
 		inputs: 1,
 		outputs: 1,
-		params: {},
+		paramSpecs: {},
 	},
 }
 
@@ -67,3 +94,17 @@ export type CvNodeParamsMap = {
 	};
 	[CvNodeType.DeepFry]: {};
 };
+
+export function buildDefaultParams<T extends CvNodeType>(
+    type: T
+): CvNodeParamsMap[T] {
+    const paramSpecs = CV_NODE_CONFIGS[type].paramSpecs;
+    const result = {} as CvNodeParamsMap[T];
+
+    for (const key in paramSpecs) {
+        const spec = paramSpecs[key];
+        result[key] = spec.default;
+    }
+
+    return result;
+}

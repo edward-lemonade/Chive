@@ -1,12 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
-import { CvNode, CV_NODE_CONFIGS, CvNodeType } from '@/types/CvNode';
+import { CvNode, CV_NODE_CONFIGS, CvNodeType, buildDefaultParams, CvNodeConfig, ParamSpec, CvNodeParamsMap } from '@/types/CvNode';
 import useEditorStore from '../store';
 
 
-function ChiveNode(props: CvNode) {
+function ChiveNode<T extends CvNodeType>(props: CvNode<T>) {
 	const { id, data, selected } = props;
-	const CONFIG = useMemo(() => CV_NODE_CONFIGS[data.cvNodeType], [data.cvNodeType]);
+	const params = data.params;
+	const CONFIG: CvNodeConfig<T> = useMemo(() => CV_NODE_CONFIGS[data.cvNodeType] as CvNodeConfig<T>, [data.cvNodeType]);
 
 	const updateNodeHandles = useUpdateNodeInternals();
 
@@ -27,7 +28,7 @@ function ChiveNode(props: CvNode) {
 			const newType: CvNodeType = Number(e.target.value);
 			updateNode({ 
 				cvNodeType: newType,
-				params: {...CV_NODE_CONFIGS[newType].params},
+				params: buildDefaultParams(newType) as any,
 			});
 		},
 		[updateNode]
@@ -92,14 +93,14 @@ function ChiveNode(props: CvNode) {
 				{handles.left}
 				{handles.right}
 				<input
-					className="nodrag w-40 bg-transparent text-green-100 text-sm font-medium focus:outline-none hover:bg-white/5 px-2 py-1 transition-colors focus:ring-2 focus:ring-blue-500"
+					className="nodrag w-40 bg-transparent text-green-100 text-sm font-medium focus:outline-none hover:bg-white/5 transition-colors focus:ring-2 focus:ring-blue-500"
 					value={data.name}
 					onChange={onNameChange}
 					placeholder="Node name"
 				/>
 
 				<select
-					className="nodrag w-40 bg-transparent text-green-100 text-sm px-2 py-1 border border-white/10 hover:bg-white/5 chive-node-select"
+					className="nodrag w-40 bg-transparent text-green-100 text-sm px-1 py-1 border border-white/10 hover:bg-white/5 chive-node-select"
 					value={data.cvNodeType}
 					onChange={onTypeChange}
 				>
@@ -107,6 +108,34 @@ function ChiveNode(props: CvNode) {
 						<option key={key} value={config.cvNodeType}>{config.displayName}</option>
 					))}
 				</select>
+
+				{Object.entries(params).map(([field, val]) => {
+					const spec = CONFIG.paramSpecs[field as keyof CvNodeParamsMap[T]] as ParamSpec<T>;
+					return (
+						<>
+							<div 
+								className="text-xs font-medium text-green-200 cursor-pointer"
+								title={spec.description}
+							>{spec.displayName}</div>
+
+							<input
+								type="number"
+								min={1}
+								className="nodrag w-40 bg-transparent text-green-200 text-xs font-medium 
+										focus:outline-none hover:bg-white/5 px-1 py-1 transition-colors 
+										focus:ring-2 focus:ring-blue-500"
+								value={val}
+								onChange={e => updateNode({
+									...data,
+									params: {
+										...data.params,
+										[field]: Number(e.target.value),
+									},
+								})}
+							/>
+						</>
+					)
+				})}
 			</div>
 		</>
 	);

@@ -9,7 +9,7 @@ import apiClient from "@/middleware/api";
 import { useNavigate, useParams } from "react-router-dom";
 import useEditorStore, { defaultNode } from './store';
 import Brand from "@/components/Brand";
-import { CvNode, CvNodeType } from "@/types/CvNode";
+import { buildDefaultParams, CvNode, CvNodeType } from "@/types/CvNode";
 import ChiveNode from "./components/ChiveNode";
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import CloseIcon from '@mui/icons-material/Close';
@@ -59,7 +59,7 @@ function EditorContent() {
 		}
 	}, [id])
 
-	const addNewNode = (cvNodeType: CvNodeType = CvNodeType.Source) => {
+	const addNewNode = useCallback(() => (cvNodeType: CvNodeType = CvNodeType.Source) => {
 		const viewportCenter = {
 			x: window.innerWidth / 2,
 			y: window.innerHeight / 2,
@@ -74,11 +74,12 @@ function EditorContent() {
 			data: {
 				...defaultNode.data,
 				name: "New Node",
+				params: buildDefaultParams(cvNodeType),
 			}
 		};
 
 		setNodes(nodes.concat(newNode));
-	};
+	}, []);
 
 	const handleSelectionChange = useCallback((params: { nodes: CvNode[], edges: Edge[] }) => {
 		setSelectedNode(params.nodes.length ? params.nodes[0] : null);
